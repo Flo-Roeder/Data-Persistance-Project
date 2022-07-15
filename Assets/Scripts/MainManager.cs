@@ -3,12 +3,21 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
+[DefaultExecutionOrder(1000)]
 
 public class MainManager : MonoBehaviour
+
 {
     public Brick BrickPrefab;
     public int LineCount = 6;
     public Rigidbody Ball;
+
+    public Text Highscore;
+    public Text Playername;
 
     public Text ScoreText;
     public GameObject GameOverText;
@@ -24,7 +33,18 @@ public class MainManager : MonoBehaviour
     {
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
-        
+
+
+        if (SceneManager.GetActiveScene().name=="main")
+        {
+            ScoreText.gameObject.SetActive(true);
+            ScoreText.text = $"Score : " + StoredData.Instance.playerName + ": 0";
+        } else if (SceneManager.GetActiveScene().name=="menu")
+        {
+            ScoreText.gameObject.SetActive(false);
+            
+        }
+
         int[] pointCountArray = new [] {1,1,2,2,5,5};
         for (int i = 0; i < LineCount; ++i)
         {
@@ -36,6 +56,8 @@ public class MainManager : MonoBehaviour
                 brick.onDestroyed.AddListener(AddPoint);
             }
         }
+
+        Highscore.text = "Best Score: " + StoredData.Instance.highScoreName + ": " + StoredData.Instance.highscoreCount;
     }
 
     private void Update()
@@ -65,12 +87,48 @@ public class MainManager : MonoBehaviour
     void AddPoint(int point)
     {
         m_Points += point;
-        ScoreText.text = $"Score : {m_Points}";
+        ScoreText.text = $"Score : "+StoredData.Instance.playerName+" "+m_Points;
     }
+
+   
 
     public void GameOver()
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+        if(m_Points>StoredData.Instance.highscoreCount)
+        {
+            StoredData.Instance.highscoreCount = m_Points;
+            StoredData.Instance.highScoreName = StoredData.Instance.playerName;
+            Highscore.text = "Best Score: " + StoredData.Instance.highScoreName + ": " + StoredData.Instance.highscoreCount;
+            StoredData.Instance.SaveHighscore();
+        }
     }
+
+    public void SartGame()
+    {
+        StoredData.Instance.playerName = Playername.text.ToString();
+        SceneManager.LoadScene(1);
+    }
+
+    public void ExitGame()
+    {
+#if UNITY_EDITOR
+        EditorApplication.ExitPlaymode();
+#else
+        Application.Quit();
+#endif
+
+    }
+
+    public void OpenMenu()
+    {
+        StoredData.Instance.playerName = "";
+        SceneManager.LoadScene(0);
+        
+    }
+    
+
+   
+
 }
